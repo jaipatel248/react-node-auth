@@ -1,14 +1,38 @@
-import { Component } from "react";
+import React, { Component } from "react";
+import { Link, Redirect } from "react-router-dom";
+import { getUser, Update } from "../API/auth";
+import { isAuthenticated } from "../auth/auth";
+import DeletProfileScreen from "./DeletProfileScreen";
 
-class SignUp extends Component {
+class EditScreen extends Component {
   constructor() {
     super();
     this.state = {
+      id: "",
+      name: "",
       email: "",
       password: "",
-      name: "",
-      error: "",
+      redirectToSign: false,
     };
+  }
+
+  componentDidMount() {
+    const userId = this.props.match.params.userId;
+    this.init(userId);
+  }
+  componentWillReceiveProps(props) {
+    const userId = props.match.params.userId;
+    this.init(userId);
+  }
+  init(userId) {
+    getUser(userId, isAuthenticated().token).then((data) => {
+      this.setState({
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+    });
   }
   handleChange = (name) => (e) => {
     this.setState({ error: "" });
@@ -16,46 +40,36 @@ class SignUp extends Component {
   };
   onSubmit = (e) => {
     e.preventDefault();
-    const { name, password, email } = this.state;
+    const { name, password, email, id } = this.state;
     const user = {
       name,
       password,
       email,
     };
-    this.SignUp(user).then((data) => {
+    console.log(user);
+    Update(id, isAuthenticated().token, user).then((data) => {
+      console.log(data);
       if (data.error) {
         console.log(data.error);
         this.setState({ error: data.error });
       } else {
         this.setState({
-          email: "",
-          password: "",
-          name: "",
-          error: "",
+          redirectToSign: true,
         });
       }
     });
   };
-  SignUp = (user) => {
-    return fetch(`${process.env.REACT_APP_API_URL}/signup`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(user),
-    })
-      .then((response) => {
-        return response.json();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
   render() {
+    if (this.state.redirectToSign) {
+      return <Redirect to={`/user/${this.state.id}`}></Redirect>;
+    }
     return (
       <div className="container">
-        <h2 className="mt-5 mb-5">Sign Up</h2>
+        <div className="row">
+          <div className="col-md-6">
+            <h2 className="mt-5 mb-5">Edit Profile</h2>
+          </div>
+        </div>
         <form>
           <div
             className="alert alert-danger"
@@ -99,4 +113,4 @@ class SignUp extends Component {
   }
 }
 
-export default SignUp;
+export default EditScreen;
